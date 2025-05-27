@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { WagmiProvider, createConfig, http } from "wagmi";
 import { mainnet, polygon, optimism, arbitrum, base } from "wagmi/chains";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ConnectKitProvider, getDefaultConfig } from "connectkit";
+import { useIsMounted } from "@/hooks/useIsMounted";
 
 // 创建 Wagmi 配置
 const config = getDefaultConfig({
@@ -39,8 +40,7 @@ const config = getDefaultConfig({
 });
 
 export function Web3Provider({ children }: { children: React.ReactNode }) {
-  // 防止 SSR 不匹配
-  const [mounted, setMounted] = useState(false);
+  const isMounted = useIsMounted();
   
   // 使用 useState 确保 QueryClient 只创建一次
   const [queryClient] = useState(
@@ -56,15 +56,11 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
       })
   );
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   // 在服务端渲染时，只渲染子组件而不包含 Web3 提供商
   // 这样可以避免 SSR 不匹配，同时保持应用结构
   return (
     <>
-      {mounted ? (
+      {isMounted ? (
         <WagmiProvider config={config}>
           <QueryClientProvider client={queryClient}>
             <ConnectKitProvider
