@@ -1,18 +1,15 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { ConnectKitButton } from "connectkit";
 import { useAccount, useBalance, useEnsName } from "wagmi";
+import { useIsMounted } from "@/hooks/useIsMounted";
 
 export function WalletDemo() {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const isMounted = useIsMounted();
 
   // 在组件挂载前显示加载状态，不调用 Wagmi hooks
-  if (!mounted) {
+  if (!isMounted) {
     return (
       <div className="wallet-section">
         <div className="wallet-loading">
