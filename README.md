@@ -10,7 +10,7 @@
 - ✅ **多钱包支持** - MetaMask、WalletConnect、Coinbase Wallet 等
 - ✅ **多链支持** - 以太坊、Polygon、Optimism、Arbitrum、Base
 - ✅ **响应式设计** - 适配桌面和移动端设备
-- ✅ **SSR 优化** - 服务端渲染优化，更好的 SEO 和性能
+- ✅ **SSR 优化** - 服务端渲染优化，解决 Hydration 问题
 - ✅ **自定义主题** - 支持主题定制和样式自定义
 
 ## 📦 安装
@@ -90,6 +90,7 @@ connectkit-nextjs-demo/
 - 设置支持的区块链网络
 - 配置 RPC 提供商
 - 处理 TanStack Query 客户端
+- **SSR 优化**：使用 `mounted` 状态防止服务端和客户端不匹配
 
 ### WalletDemo 组件
 
@@ -98,6 +99,7 @@ connectkit-nextjs-demo/
 - 显示钱包地址和余额
 - 显示 ENS 名称
 - 显示当前网络信息
+- **加载状态**：在组件挂载前显示友好的加载提示
 
 ### Next.js 配置
 
@@ -134,9 +136,10 @@ ConnectKit 支持自定义主题，在 `Web3Provider.tsx` 中可以看到配置�
 
 ### 常见问题
 
-1. **Hydration 错误**：
-   - 确保所有客户端组件都标记了 `"use client"`
-   - 使用 `useState` 初始化 QueryClient
+1. **Hydration 错误** ✅ **已修复**：
+   - 使用 `mounted` 状态防止 SSR 不匹配
+   - 在客户端挂载前不渲染 Web3 组件
+   - 添加友好的加载状态
 
 2. **WalletConnect 连接失败**：
    - 检查 `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` 是否正确设置
@@ -146,11 +149,39 @@ ConnectKit 支持自定义主题，在 `Web3Provider.tsx` 中可以看到配置�
    - 检查 `next.config.js` 中的 webpack 配置
    - 清除缓存：`rm -rf .next && npm run dev`
 
+4. **类型错误**：
+   - 确保所有依赖版本兼容
+   - 运行 `npm run lint` 检查代码
+
+### SSR 优化详解
+
+本项目已经解决了常见的 Next.js + Web3 应用中的 SSR 问题：
+
+```typescript
+// Web3Provider.tsx
+const [mounted, setMounted] = useState(false);
+
+useEffect(() => {
+  setMounted(true);
+}, []);
+
+// 在服务端渲染时，不渲染 Web3 相关组件
+if (!mounted) {
+  return <>{children}</>;
+}
+```
+
+这确保了：
+- 服务端不渲染 Web3 组件，避免 `window` 对象未定义错误
+- 客户端挂载后才初始化钱包连接
+- 提供平滑的加载体验
+
 ### 开发提示
 
 - 使用 `npm run lint` 检查代码质量
 - 使用 TypeScript 获得更好的开发体验
 - 建议使用 VSCode 并安装相关扩展
+- 在开发模式下，热重载可能会导致钱包重连，这是正常现象
 
 ## 🚀 部署
 
@@ -158,7 +189,9 @@ ConnectKit 支持自定义主题，在 `Web3Provider.tsx` 中可以看到配置�
 
 1. Fork 这个仓库
 2. 在 [Vercel](https://vercel.com) 中导入项目
-3. 设置环境变量
+3. 设置环境变量：
+   - `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID`
+   - `NEXT_PUBLIC_ALCHEMY_ID` (可选)
 4. 部署
 
 ### 其他平台
@@ -195,3 +228,4 @@ MIT License
 **注意**: 
 1. 使用前请确保在 `.env.local` 文件中配置正确的 WalletConnect Project ID
 2. 建议在生产环境中使用自己的 Alchemy API Key 以获得更好的性能
+3. 本项目已解决常见的 Next.js SSR 和 Hydration 问题
