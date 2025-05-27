@@ -1,17 +1,10 @@
-import dynamic from 'next/dynamic'
 import './globals.css'
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
+import { ClientOnly } from '@/components/ClientOnly'
+import { Web3Provider } from '@/providers/Web3Provider'
 
 const inter = Inter({ subsets: ['latin'] })
-
-// 动态导入 Web3Provider，禁用 SSR
-const Web3Provider = dynamic(
-  () => import('@/providers/Web3Provider').then(mod => ({ default: mod.Web3Provider })),
-  {
-    ssr: false,
-  }
-)
 
 export const metadata: Metadata = {
   title: 'ConnectKit Next.js Demo',
@@ -26,9 +19,20 @@ export default function RootLayout({
   return (
     <html lang="zh-CN">
       <body className={inter.className}>
-        <Web3Provider>
-          {children}
-        </Web3Provider>
+        <ClientOnly
+          fallback={
+            <div className="container">
+              <div className="header">
+                <h1 className="title">ConnectKit Next.js Demo</h1>
+                <p className="subtitle">正在加载应用...</p>
+              </div>
+            </div>
+          }
+        >
+          <Web3Provider>
+            {children}
+          </Web3Provider>
+        </ClientOnly>
       </body>
     </html>
   )
