@@ -1,10 +1,11 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { ConnectKitButton } from "connectkit";
 import { useAccount, useBalance, useEnsName } from "wagmi";
 
 export function WalletDemo() {
+  const [mounted, setMounted] = useState(false);
   const { address, isConnected, chain } = useAccount();
   const { data: balance } = useBalance({
     address,
@@ -12,6 +13,21 @@ export function WalletDemo() {
   const { data: ensName } = useEnsName({
     address,
   });
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // 在组件挂载前显示加载状态
+  if (!mounted) {
+    return (
+      <div className="wallet-section">
+        <div className="wallet-loading">
+          <p>🔄 正在加载钱包连接...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="wallet-section">
