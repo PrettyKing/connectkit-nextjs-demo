@@ -60,23 +60,27 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
     setMounted(true);
   }, []);
 
-  // 在服务端渲染时，不渲染 Web3 相关组件
-  if (!mounted) {
-    return <>{children}</>;
-  }
-
+  // 在服务端渲染时，只渲染子组件而不包含 Web3 提供商
+  // 这样可以避免 SSR 不匹配，同时保持应用结构
   return (
-    <WagmiProvider config={config}>
-      <QueryClientProvider client={queryClient}>
-        <ConnectKitProvider
-          customTheme={{
-            "--ck-border-radius": "16px",
-            "--ck-primary-button-border-radius": "16px",
-          }}
-        >
-          {children}
-        </ConnectKitProvider>
-      </QueryClientProvider>
-    </WagmiProvider>
+    <>
+      {mounted ? (
+        <WagmiProvider config={config}>
+          <QueryClientProvider client={queryClient}>
+            <ConnectKitProvider
+              customTheme={{
+                "--ck-border-radius": "16px",
+                "--ck-primary-button-border-radius": "16px",
+              }}
+            >
+              {children}
+            </ConnectKitProvider>
+          </QueryClientProvider>
+        </WagmiProvider>
+      ) : (
+        // 服务端渲染时的回退内容
+        children
+      )}
+    </>
   );
 }
