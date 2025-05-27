@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { WagmiProvider, createConfig, http } from "wagmi";
 import { mainnet, polygon, optimism, arbitrum, base } from "wagmi/chains";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -39,6 +39,9 @@ const config = getDefaultConfig({
 });
 
 export function Web3Provider({ children }: { children: React.ReactNode }) {
+  // 防止 SSR 不匹配
+  const [mounted, setMounted] = useState(false);
+  
   // 使用 useState 确保 QueryClient 只创建一次
   const [queryClient] = useState(
     () =>
@@ -52,6 +55,15 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
         },
       })
   );
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // 在服务端渲染时，不渲染 Web3 相关组件
+  if (!mounted) {
+    return <>{children}</>;
+  }
 
   return (
     <WagmiProvider config={config}>
