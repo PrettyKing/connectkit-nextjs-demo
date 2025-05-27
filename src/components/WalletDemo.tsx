@@ -6,19 +6,12 @@ import { useAccount, useBalance, useEnsName } from "wagmi";
 
 export function WalletDemo() {
   const [mounted, setMounted] = useState(false);
-  const { address, isConnected, chain } = useAccount();
-  const { data: balance } = useBalance({
-    address,
-  });
-  const { data: ensName } = useEnsName({
-    address,
-  });
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // 在组件挂载前显示加载状态
+  // 在组件挂载前显示加载状态，不调用 Wagmi hooks
   if (!mounted) {
     return (
       <div className="wallet-section">
@@ -28,6 +21,19 @@ export function WalletDemo() {
       </div>
     );
   }
+
+  return <WalletDemoContent />;
+}
+
+// 分离出一个子组件，只在客户端挂载后渲染
+function WalletDemoContent() {
+  const { address, isConnected, chain } = useAccount();
+  const { data: balance } = useBalance({
+    address,
+  });
+  const { data: ensName } = useEnsName({
+    address,
+  });
 
   return (
     <div className="wallet-section">
