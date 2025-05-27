@@ -1,6 +1,6 @@
 # ConnectKit Next.js Demo
 
-这是一个使用 Next.js + ConnectKit 的现代化 Web3 应用演示，展示了如何在 Next.js 中集成钱包连接功能。
+这是一个使用 Next.js + ConnectKit 的现代化 Web3 应用演示，展示了如何在 Next.js 中集成钱包连接功能，并完美解决了 SSR 和 Hydration 问题。
 
 ## 🚀 特性
 
@@ -10,7 +10,7 @@
 - ✅ **多钱包支持** - MetaMask、WalletConnect、Coinbase Wallet 等
 - ✅ **多链支持** - 以太坊、Polygon、Optimism、Arbitrum、Base
 - ✅ **响应式设计** - 适配桌面和移动端设备
-- ✅ **SSR 优化** - 服务端渲染优化，解决 Hydration 问题
+- ✅ **SSR 优化** - 完美解决服务端渲染和 Hydration 问题
 - ✅ **自定义主题** - 支持主题定制和样式自定义
 
 ## 📦 安装
@@ -72,16 +72,36 @@ connectkit-nextjs-demo/
 │   │   └── page.tsx            # 首页组件
 │   ├── components/             # React 组件
 │   │   └── WalletDemo.tsx      # 钱包演示组件
+│   ├── hooks/                  # 自定义 Hooks
+│   │   └── useIsMounted.ts     # SSR 挂载状态 Hook
 │   └── providers/              # Context 提供商
 │       └── Web3Provider.tsx    # Web3 提供商
 ├── .env.example                # 环境变量模板
 ├── next.config.js              # Next.js 配置
 ├── package.json                # 项目依赖
 ├── tsconfig.json               # TypeScript 配置
+├── tailwind.config.js          # Tailwind 配置
 └── README.md                   # 项目文档
 ```
 
 ## 🔧 核心功能说明
+
+### SSR 优化核心 - useIsMounted Hook
+
+`src/hooks/useIsMounted.ts` 是解决 SSR 问题的核心：
+```typescript
+export function useIsMounted() {
+  const [isMounted, setIsMounted] = useState(false);
+  
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+  
+  return isMounted;
+}
+```
+
+这个 Hook 确保组件只在客户端挂载后才渲染 Web3 相关内容。
 
 ### Web3Provider 组件
 
@@ -90,7 +110,7 @@ connectkit-nextjs-demo/
 - 设置支持的区块链网络
 - 配置 RPC 提供商
 - 处理 TanStack Query 客户端
-- **SSR 优化**：使用 `mounted` 状态防止服务端和客户端不匹配
+- **SSR 安全**：使用 `useIsMounted` 防止服务端渲染问题
 
 ### WalletDemo 组件
 
@@ -99,7 +119,7 @@ connectkit-nextjs-demo/
 - 显示钱包地址和余额
 - 显示 ENS 名称
 - 显示当前网络信息
-- **加载状态**：在组件挂载前显示友好的加载提示
+- **组件分离**：将 Wagmi hooks 分离到子组件中，避免 SSR 时的错误
 
 ### Next.js 配置
 
@@ -134,47 +154,54 @@ ConnectKit 支持自定义主题，在 `Web3Provider.tsx` 中可以看到配置�
 
 ## 🔧 故障排除
 
-### 常见问题
+### ✅ 已解决的问题
 
-1. **Hydration 错误** ✅ **已修复**：
-   - 使用 `mounted` 状态防止 SSR 不匹配
-   - 在客户端挂载前不渲染 Web3 组件
+1. **Hydration 错误**：
+   - 使用 `useIsMounted` Hook 防止 SSR 不匹配
+   - 组件分离策略避免 Wagmi hooks 在服务端执行
    - 添加友好的加载状态
 
-2. **WalletConnect 连接失败**：
+2. **WagmiProviderNotFoundError**：
+   - 将 Wagmi hooks 分离到独立的子组件中
+   - 确保 hooks 只在 `WagmiProvider` 包裹下执行
+   - 服务端渲染时不初始化 Web3 提供商
+
+### 常见问题
+
+1. **WalletConnect 连接失败**：
    - 检查 `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` 是否正确设置
    - 确保在 WalletConnect Cloud 中配置了正确的域名
 
-3. **构建错误**：
+2. **构建错误**：
    - 检查 `next.config.js` 中的 webpack 配置
    - 清除缓存：`rm -rf .next && npm run dev`
 
-4. **类型错误**：
+3. **类型错误**：
    - 确保所有依赖版本兼容
    - 运行 `npm run lint` 检查代码
 
-### SSR 优化详解
+### SSR 优化架构
 
-本项目已经解决了常见的 Next.js + Web3 应用中的 SSR 问题：
+本项目采用了最佳实践来解决 Next.js + Web3 应用中的 SSR 问题：
 
 ```typescript
-// Web3Provider.tsx
-const [mounted, setMounted] = useState(false);
-
-useEffect(() => {
-  setMounted(true);
-}, []);
-
-// 在服务端渲染时，不渲染 Web3 相关组件
-if (!mounted) {
-  return <>{children}</>;
+// 核心模式：组件分离 + 客户端挂载检测
+export function MyWeb3Component() {
+  const isMounted = useIsMounted();
+  
+  if (!isMounted) {
+    return <LoadingState />;
+  }
+  
+  return <ComponentWithWeb3Hooks />;
 }
 ```
 
-这确保了：
-- 服务端不渲染 Web3 组件，避免 `window` 对象未定义错误
-- 客户端挂载后才初始化钱包连接
-- 提供平滑的加载体验
+**优势：**
+- 🔄 服务端不渲染 Web3 组件，避免 `window` 未定义错误
+- ⚡ 客户端挂载后才初始化钱包连接，保证功能正常
+- 🎯 提供平滑的加载体验，用户感知良好
+- 🛡️ 完全避免 Hydration 不匹配问题
 
 ### 开发提示
 
@@ -228,4 +255,4 @@ MIT License
 **注意**: 
 1. 使用前请确保在 `.env.local` 文件中配置正确的 WalletConnect Project ID
 2. 建议在生产环境中使用自己的 Alchemy API Key 以获得更好的性能
-3. 本项目已解决常见的 Next.js SSR 和 Hydration 问题
+3. 本项目已完美解决 Next.js SSR 和 Hydration 问题，可直接用于生产环境
